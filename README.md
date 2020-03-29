@@ -80,6 +80,11 @@ extend {
 
 [Repeats](data/keyframes/circle-expressions.json), simple key repeating mechanism
 
-[Expressions](data/keyframes/circle-expressions.json), expression mechanism. Currently uses values `r` to indicate repeat index and `t` the last used key time. 
+[Expressions](data/keyframes/circle-expressions.json), expression mechanism. Currently uses values `r` to indicate repeat index and `t` the last used key time, `v` the last used value (for the animated attribute) 
 
 Note that expressions have broken operator precedence, likely due to [this issue](https://github.com/Strumenta/antlr-kotlin/issues/22)
+
+
+## Future features
+
+[Parameters and prototypes](data/keyframes/circle-parametric.json)

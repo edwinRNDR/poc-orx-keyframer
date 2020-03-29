@@ -152,6 +152,7 @@ open class Keyframer {
                     val channel = channels.getOrPut(channelCandidate.key) {
                         KeyframerChannel()
                     }
+                    expressionContext["v"] = channel.lastValue() ?: 0.0
                     val value = when (val candidate = channelCandidate.value) {
                         is Double -> candidate
                         is String -> evaluateExpression(candidate, expressionContext)
@@ -188,7 +189,6 @@ open class Keyframer {
                     }
                 }
             }
-
         }
 
         for (key in keys) {
