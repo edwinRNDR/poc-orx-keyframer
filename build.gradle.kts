@@ -3,8 +3,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
 /* the name of this project, default is the template version but you are free to change these */
-group = "org.openrndr.template"
-version = "0.3.11"
+group = "org.openrndr.extra"
+version = "0.4.0-SNAPSHOT"
 
 val applicationMainClass = "TemplateProgramKt"
 
@@ -90,9 +90,13 @@ val applicationLogging = Logging.FULL
 
 val kotlinVersion = "1.3.71"
 
+
+
+
 plugins {
     java
     kotlin("jvm") version("1.3.71")
+    maven
 }
 
 repositories {
