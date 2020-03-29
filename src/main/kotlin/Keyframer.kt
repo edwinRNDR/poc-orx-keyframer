@@ -106,7 +106,7 @@ open class Keyframer {
             delegate.reset()
         }
 
-        for (key in keys) {
+        fun handleKey(key: Map<String, Any>) {
             val time = when (val timeCandidate = key["time"]) {
                 null -> lastTime
                 is String -> timeCandidate.toDoubleOrNull()
@@ -115,6 +115,16 @@ open class Keyframer {
                 is Int -> timeCandidate.toDouble()
                 is Float -> timeCandidate.toDouble()
                 else -> error("unknown time format for '$timeCandidate'")
+            }
+
+            val duration = when (val candidate = key["duration"]) {
+                null -> 0.0
+                is String -> candidate.toDoubleOrNull()
+                    ?: error { "unknown value format for time : $candidate" }
+                is Int -> candidate.toDouble()
+                is Float -> candidate.toDouble()
+                is Double -> candidate
+                else -> error("unknown duration type for '$candidate")
             }
 
             val easing = when (val easingCandidate = key["easing"]) {
@@ -149,7 +159,33 @@ open class Keyframer {
                     channel.add(time, value, easing, hold)
                 }
             }
-            lastTime = time
+            lastTime = time + duration
+
+            if (key.containsKey("repeat")) {
+                val repeatObject = key["repeat"] as? Map<String, Any> ?: error("'repeat' should be a map")
+                val count = when (val countCandidate = repeatObject["count"]) {
+                    null -> 1
+                    is Int -> countCandidate
+                    is Double -> countCandidate.toInt()
+                    is String -> countCandidate.toIntOrNull()
+                        ?: error { "unknown value format for count '${countCandidate}'" }
+                    else -> error { "unknown value type for count: '$countCandidate" }
+                }
+
+                val keys = repeatObject["keys"] as? List<Map<String, Any>> ?: error("no repeat keys")
+
+                println("repeating $count times")
+                for (i in 0 until count) {
+                    for (key in keys) {
+                        handleKey(key)
+                    }
+                }
+            }
+
+        }
+
+        for (key in keys) {
+            handleKey(key)
         }
     }
 }

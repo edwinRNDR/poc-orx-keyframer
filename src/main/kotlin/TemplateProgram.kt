@@ -17,7 +17,7 @@ fun main() = application {
         }
 
         val kf = Keyframe()
-        watchFile(File("data/keyframes/circle.json")) {
+        watchFile(File("data/keyframes/circle-repeats.json")) {
             kf.loadFromJson(it)
         }
 
