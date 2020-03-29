@@ -75,3 +75,11 @@ extend {
     drawer.circle(animation.position, animation.radius)
 }
 ```
+
+## Advanced features
+
+[Repeats](data/keyframes/circle-expressions.json), simple key repeating mechanism
+
+[Expressions](data/keyframes/circle-expressions.json), expression mechanism. Currently uses values `r` to indicate repeat index and `t` the last used key time. 
+
+Note that expressions have broken operator precedence, likely due to [this issue](https://github.com/Strumenta/antlr-kotlin/issues/22)

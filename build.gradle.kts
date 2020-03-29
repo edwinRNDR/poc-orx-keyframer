@@ -90,8 +90,24 @@ val applicationLogging = Logging.FULL
 
 val kotlinVersion = "1.3.71"
 
+val antlrKotlinVersion = "94f8764bcf"
 
+buildscript {
+    // we have to re-declare this here :-(
+    val antlrKotlinVersion = "94f8764bcf"
+    // you can also use a jitpack version (we have to re-declare this here):
+    //val antlrKotlinVersion = "86a86f1968"
 
+    dependencies {
+        // add the plugin to the classpath
+
+        classpath("com.strumenta.antlr-kotlin:antlr-kotlin-gradle-plugin:$antlrKotlinVersion")
+    }
+
+    repositories {
+        maven("https://jitpack.io")
+    }
+}
 
 plugins {
     java
@@ -100,11 +116,13 @@ plugins {
 }
 
 repositories {
+    jcenter()
     mavenCentral()
     if (openrndrUseSnapshot || orxUseSnapshot) {
         mavenLocal()
     }
     maven(url = "https://dl.bintray.com/openrndr/openrndr")
+    maven("https://jitpack.io")
 }
 
 fun DependencyHandler.orx(module: String): Any {
@@ -123,8 +141,10 @@ fun DependencyHandler.orxNatives(module: String): Any {
     return "org.openrndr.extra:$module-natives-$openrndrOs:$orxVersion"
 }
 
-dependencies {
 
+
+dependencies {
+    implementation("com.strumenta.antlr-kotlin:antlr-kotlin-runtime-jvm:$antlrKotlinVersion")
     /*  This is where you add additional (third-party) dependencies */
 
 //    implementation("org.jsoup:jsoup:1.12.2")
@@ -190,6 +210,49 @@ configure<JavaPluginConvention> {
 }
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
+}
+
+
+// run generate task before build
+// not required if you add the generated sources to version control
+// you can call the task manually in this case to update the generated sources
+tasks.getByName("compileKotlin").dependsOn("generateKotlinGrammarSource")
+
+// you have to add the generated sources to kotlin compiler source directory list
+configure<SourceSetContainer> {
+    named("main") {
+        withConvention(org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet::class) {
+            kotlin.srcDir("build/generated-src/antlr/main")
+            // kotlin.srcDir("src/main/kotlin-antlr")
+        }
+    }
+}
+// in antlr-kotlin-plugin <0.0.5, the configuration was applied by the plugin.
+// starting from verison 0.0.5, you have to apply it manually:
+tasks.register<com.strumenta.antlrkotlin.gradleplugin.AntlrKotlinTask>("generateKotlinGrammarSource") {
+    // the classpath used to run antlr code generation
+    antlrClasspath = configurations.detachedConfiguration(
+        // antlr itself
+        // antlr is transitive added by antlr-kotlin-target,
+        // add another dependency if you want to choose another antlr4 version (not recommended)
+        // project.dependencies.create("org.antlr:antlr4:$antlrVersion"),
+
+        // antlr target, required to create kotlin code
+        project.dependencies.create("com.strumenta.antlr-kotlin:antlr-kotlin-target:$antlrKotlinVersion")
+    )
+    maxHeapSize = "64m"
+    packageName = "org.openrndr.extra.keyframer.antlr"
+    //arguments = listOf("-no-visitor", "-no-listener")
+    source = project.objects
+        .sourceDirectorySet("antlr", "antlr")
+        .srcDir("src/main/antlr").apply {
+            include("*.g4")
+        }
+    // outputDirectory is required, put it into the build directory
+    // if you do not want to add the generated sources to version control
+    outputDirectory = File("build/generated-src/antlr/main")
+    // use this settings if you want to add the generated sources to version control
+    // outputDirectory = File("src/main/kotlin-antlr")
 }
 
 tasks.withType<Jar> {

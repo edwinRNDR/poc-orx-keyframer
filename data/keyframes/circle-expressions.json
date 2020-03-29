@@ -1,0 +1,52 @@
+[
+  {
+    "time": 0.0,
+    "easing": "cubic-in-out",
+    "x": 3.0,
+    "y": 4.0,
+    "z": 9.0,
+    "r": 0.1,
+    "g": 0.5,
+    "b": 0.2,
+    "radius": 50
+  },
+  {
+    "time": 2.0,
+    "easing": "cubic-in-out",
+    "r": 0.6,
+    "g": 0.5,
+    "b": 0.1
+  },
+  {
+    "time": 3.0,
+    "repeat": {
+      "count": 5,
+      "keys": [
+        {
+          "time": "(r * 0.5) + 3.0",
+          "easing": "cubic-in-out",
+          "radius": "(r + 1) * 100.0"
+        },
+        {
+          "time": "t + 0.25",
+          "easing": "cubic-in-out",
+          "radius": 40
+        }
+      ]
+    }
+  },
+  {
+    "time": 15.0,
+    "easing": "cubic-in-out",
+    "x": 100.0,
+    "y": 320.0,
+    "radius": 400
+  },
+  {
+    "time": 15.3,
+    "easing": "cubic-in-out",
+    "x": 100.0,
+    "y": 320.0,
+    "radius": 40
+  }
+]

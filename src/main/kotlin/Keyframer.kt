@@ -106,20 +106,23 @@ open class Keyframer {
             delegate.reset()
         }
 
+        val expressionContext = mutableMapOf<String, Double>()
+        expressionContext["t"] = 0.0
+
         fun handleKey(key: Map<String, Any>) {
-            val time = when (val timeCandidate = key["time"]) {
+            val time = when (val candidate = key["time"]) {
                 null -> lastTime
-                is String -> timeCandidate.toDoubleOrNull()
-                    ?: error { "unknown value format for time : $timeCandidate" }
-                is Double -> timeCandidate
-                is Int -> timeCandidate.toDouble()
-                is Float -> timeCandidate.toDouble()
-                else -> error("unknown time format for '$timeCandidate'")
+                is String -> evaluateExpression(candidate, expressionContext)
+                    ?: error { "unknown value format for time : $candidate" }
+                is Double -> candidate
+                is Int -> candidate.toDouble()
+                is Float -> candidate.toDouble()
+                else -> error("unknown time format for '$candidate'")
             }
 
             val duration = when (val candidate = key["duration"]) {
                 null -> 0.0
-                is String -> candidate.toDoubleOrNull()
+                is String -> evaluateExpression(candidate, expressionContext)
                     ?: error { "unknown value format for time : $candidate" }
                 is Int -> candidate.toDouble()
                 is Float -> candidate.toDouble()
@@ -149,17 +152,19 @@ open class Keyframer {
                     val channel = channels.getOrPut(channelCandidate.key) {
                         KeyframerChannel()
                     }
-                    val value = when (val valueCandidate = channelCandidate.value) {
-                        is Double -> valueCandidate
-                        is String -> valueCandidate.toDoubleOrNull()
-                            ?: error { "unknown value format for key '${channelCandidate.key}' : $valueCandidate" }
-                        is Int -> valueCandidate.toDouble()
-                        else -> error { "unknown value type for key '${channelCandidate.key}' : $valueCandidate" }
+                    val value = when (val candidate = channelCandidate.value) {
+                        is Double -> candidate
+                        is String -> evaluateExpression(candidate, expressionContext)
+                            ?: error { "unknown value format for key '${channelCandidate.key}' : $candidate" }
+                        is Int -> candidate.toDouble()
+                        else -> error { "unknown value type for key '${channelCandidate.key}' : $candidate" }
                     }
                     channel.add(time, value, easing, hold)
+                    println("$time: $channelCandidate.key -> $value")
                 }
             }
             lastTime = time + duration
+            expressionContext["t"] = lastTime
 
             if (key.containsKey("repeat")) {
                 val repeatObject = key["repeat"] as? Map<String, Any> ?: error("'repeat' should be a map")
@@ -176,6 +181,8 @@ open class Keyframer {
 
                 println("repeating $count times")
                 for (i in 0 until count) {
+                    println("$i")
+                    expressionContext["r"] = i.toDouble()
                     for (key in keys) {
                         handleKey(key)
                     }
