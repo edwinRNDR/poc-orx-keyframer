@@ -42,13 +42,14 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
     }
 
     override fun exitBinaryOperation1(ctx: MiniCalcParser.BinaryOperation1Context) {
-        val left = doubleStack.pop()
         val right = doubleStack.pop()
+        val left = doubleStack.pop()
+
 
 
         val result = when (val operator = ctx.operator?.type) {
             MiniCalcParser.Tokens.PLUS.id -> left + right
-            MiniCalcParser.Tokens.MINUS.id -> right - left
+            MiniCalcParser.Tokens.MINUS.id -> left - right
             MiniCalcParser.Tokens.ASTERISK.id -> left * right
             MiniCalcParser.Tokens.DIVISION.id -> left / right
             else -> error("operator not implemented")

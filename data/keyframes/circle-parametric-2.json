@@ -1,0 +1,66 @@
+{
+  "parameters": {
+    "smallRadius": 5.0,
+    "repetitionCount": 10,
+    "width": 640.0,
+    "height": 480.0
+  },
+  "prototypes": {
+    "red": {
+      "r": 1.0,
+      "g": 0.0,
+      "b": 0.0
+    },
+    "blue": {
+      "r": 0.0,
+      "g": 0.0,
+      "b": 1.0
+    },
+    "center": {
+      "x": "width / 2",
+      "y": "height / 2"
+    },
+    "small": {
+      "radius": "smallRadius"
+    },
+    "large": {
+      "radius": "smallRadius * 10.0"
+    }
+  },
+  "keys": [
+    {
+      "time": 0.0,
+      "easing": "cubic-in-out",
+      "x": 3.0,
+      "y": 4.0,
+      "z": 9.0,
+      "r": 0.0,
+      "g": 1.0,
+      "b": 0.0,
+      "radius": 50,
+      "foo" : 0.0
+    },
+    {
+      "time": 2.0,
+      "easing": "cubic-in-out",
+      "prototypes": "red center small"
+    },
+    {
+      "time": 3.0,
+      "repeat": {
+        "count": "repetitionCount",
+        "keys": [
+          {
+            "time": "(r * 0.5) + 3.0",
+            "prototypes": "blue large",
+            "easing": "cubic-in-out"
+          },
+          {
+            "time": "t + 0.25",
+            "prototypes": "red small"
+          }
+        ]
+      }
+    }
+  ]
+}
