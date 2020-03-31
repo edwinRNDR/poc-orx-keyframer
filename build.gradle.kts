@@ -12,8 +12,8 @@ val applicationMainClass = "TemplateProgramKt"
 val orxFeatures = setOf(
 //  "orx-camera",
     "orx-compositor",
-  "orx-easing",
-  "orx-file-watcher",
+    "orx-easing",
+    "orx-file-watcher",
 //  "orx-parameters",
 //  "orx-filter-extension",
     "orx-fx",
@@ -61,7 +61,7 @@ val orxVersion = if (orxUseSnapshot) "0.4.0-SNAPSHOT" else "0.3.50"
 val supportedPlatforms = setOf("windows", "macos", "linux-x64", "linux-arm64")
 
 val openrndrOs = if (project.hasProperty("targetPlatform")) {
-    val platform : String = project.property("targetPlatform") as String
+    val platform: String = project.property("targetPlatform") as String
     if (platform !in supportedPlatforms) {
         throw IllegalArgumentException("target platform not supported: $platform")
     } else {
@@ -70,10 +70,10 @@ val openrndrOs = if (project.hasProperty("targetPlatform")) {
 } else when (OperatingSystem.current()) {
     OperatingSystem.WINDOWS -> "windows"
     OperatingSystem.MAC_OS -> "macos"
-    OperatingSystem.LINUX -> when(val h = DefaultNativePlatform("current").architecture.name) {
+    OperatingSystem.LINUX -> when (val h = DefaultNativePlatform("current").architecture.name) {
         "x86-64" -> "linux-x64"
         "aarch64" -> "linux-arm64"
-        else ->throw IllegalArgumentException("architecture not supported: $h")
+        else -> throw IllegalArgumentException("architecture not supported: $h")
     }
     else -> throw IllegalArgumentException("os not supported")
 }
@@ -111,8 +111,9 @@ buildscript {
 
 plugins {
     java
-    kotlin("jvm") version("1.3.71")
+    kotlin("jvm") version ("1.3.71")
     maven
+    `maven-publish`
 }
 
 repositories {
@@ -126,7 +127,7 @@ repositories {
 }
 
 fun DependencyHandler.orx(module: String): Any {
-        return "org.openrndr.extra:$module:$orxVersion"
+    return "org.openrndr.extra:$module:$orxVersion"
 }
 
 fun DependencyHandler.openrndr(module: String): Any {
@@ -164,15 +165,15 @@ dependencies {
     implementation(openrndr("extensions"))
     implementation(openrndr("filter"))
 
-    implementation("org.jetbrains.kotlinx", "kotlinx-coroutines-core","1.3.5")
-    implementation("io.github.microutils", "kotlin-logging","1.7.9")
+    implementation("org.jetbrains.kotlinx", "kotlinx-coroutines-core", "1.3.5")
+    implementation("io.github.microutils", "kotlin-logging", "1.7.9")
 
-    when(applicationLogging) {
+    when (applicationLogging) {
         Logging.NONE -> {
-            runtimeOnly("org.slf4j","slf4j-nop","1.7.30")
+            runtimeOnly("org.slf4j", "slf4j-nop", "1.7.30")
         }
         Logging.SIMPLE -> {
-            runtimeOnly("org.slf4j","slf4j-simple","1.7.30")
+            runtimeOnly("org.slf4j", "slf4j-simple", "1.7.30")
         }
         Logging.FULL -> {
             runtimeOnly("org.apache.logging.log4j", "log4j-slf4j-impl", "2.13.1")
@@ -254,30 +255,3 @@ tasks.register<com.strumenta.antlrkotlin.gradleplugin.AntlrKotlinTask>("generate
     // use this settings if you want to add the generated sources to version control
     // outputDirectory = File("src/main/kotlin-antlr")
 }
-
-tasks.withType<Jar> {
-    isZip64 = true
-    manifest {
-        attributes["Main-Class"] = applicationMainClass
-    }
-    doFirst {
-        from(configurations.compileClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
-        from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
-    }
-
-    exclude(listOf("META-INF/*.RSA", "META-INF/*.SF", "META-INF/*.DSA", "**/module-info*"))
-    archiveFileName.set("application-$openrndrOs.jar")
-}
-
-tasks.create("zipDistribution", Zip::class.java) {
-    archiveFileName.set("application-$openrndrOs.zip")
-    from("./") {
-        include("data/**")
-    }
-    from("$buildDir/libs/application-$openrndrOs.jar")
-}.dependsOn(tasks.jar)
-
-tasks.create("run", JavaExec::class.java) {
-    main = applicationMainClass
-    classpath = sourceSets.main.get().runtimeClasspath
-}.dependsOn(tasks.build)

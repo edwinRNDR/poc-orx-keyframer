@@ -88,3 +88,22 @@ Note that expressions have broken operator precedence, likely due to [this issue
 ## Future features
 
 [Parameters and prototypes](data/keyframes/circle-parametric.json)
+
+
+## Using this is a library
+
+ - clone and run ./gradlew publishToMavenLocal
+ - in an openrndr-template based project set `orxUseSnapshot` to `true` (make sure you have a recent snapshot installed)
+ - add `poc-orx-keyframer` to `openrndrFeatures`
+ - the `repositories` section should look like this:
+ ```repositories {
+        mavenCentral()
+        if (openrndrUseSnapshot || orxUseSnapshot) {
+            mavenLocal()
+        }
+        maven(url = "https://dl.bintray.com/openrndr/openrndr")
+    
+        maven("https://jitpack.io")
+        jcenter()
+    }
+```
