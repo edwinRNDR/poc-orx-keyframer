@@ -51,12 +51,12 @@
         "count": "repetitionCount",
         "keys": [
           {
-            "time": "(r * 0.5) + 3.0",
+            "time": "(r * 2.0) + 3.0",
             "prototypes": "blue large",
             "easing": "cubic-in-out"
           },
           {
-            "time": "t + 0.25",
+            "time": "t + 1.0",
             "prototypes": "red small"
           }
         ]
