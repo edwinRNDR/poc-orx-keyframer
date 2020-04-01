@@ -90,7 +90,7 @@ Note that expressions have broken operator precedence, likely due to [this issue
 [Parameters and prototypes](data/keyframes/circle-parametric.json)
 
 
-## Using this is a library
+## Using this as a library
 
  - clone and run ./gradlew publishToMavenLocal
  - in an openrndr-template based project set `orxUseSnapshot` to `true` (make sure you have a recent snapshot installed)
