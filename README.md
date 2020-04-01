@@ -22,7 +22,7 @@ What this allows you to do:
     "b": 0.2,
     "radius": 50
   },
-  {https://github.com/edwinRNDR/poc-orx-keyframer/blob/master/README.md
+  {
     "time": 2.0,
     "easing": "cubic-in-out",
     "r": 0.6,
