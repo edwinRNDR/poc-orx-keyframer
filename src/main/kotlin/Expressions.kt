@@ -2,19 +2,29 @@ package org.operndr.extra.keyframer
 
 import org.antlr.v4.kotlinruntime.CharStreams
 import org.antlr.v4.kotlinruntime.CommonTokenStream
-import org.antlr.v4.kotlinruntime.ParserRuleContext
 import org.antlr.v4.kotlinruntime.tree.ErrorNode
 import org.antlr.v4.kotlinruntime.tree.ParseTreeWalker
 import org.antlr.v4.kotlinruntime.tree.TerminalNode
 import org.openrndr.extra.keyframer.antlr.MiniCalcLexer
 import org.openrndr.extra.keyframer.antlr.MiniCalcParser
 import org.openrndr.extra.keyframer.antlr.MiniCalcParserBaseListener
+import java.lang.Math.pow
 import java.lang.RuntimeException
 import java.util.*
+import kotlin.math.*
+
+internal enum class IDType {
+    VARIABLE,
+    FUNCTION1,
+    FUNCTION2
+}
 
 internal class ExpressionListener : MiniCalcParserBaseListener() {
     val doubleStack = Stack<Double>()
+    val functionStack = Stack<(DoubleArray) -> Double>()
     val variables = mutableMapOf<String, Double>()
+
+    val idTypeStack = Stack<IDType>()
 
     var lastExpressionResult: Double? = null
 
@@ -23,9 +33,6 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
         println(node.text)
     }
 
-//    override fun enterEveryRule(ctx: ParserRuleContext) {
-//        println(ctx.text)
-//    }
 
     override fun exitExpressionStatement(ctx: MiniCalcParser.ExpressionStatementContext) {
         val result = doubleStack.pop()
@@ -46,7 +53,6 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
         val left = doubleStack.pop()
 
 
-
         val result = when (val operator = ctx.operator?.type) {
             MiniCalcParser.Tokens.PLUS.id -> left + right
             MiniCalcParser.Tokens.MINUS.id -> left - right
@@ -60,8 +66,6 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
     override fun exitBinaryOperation2(ctx: MiniCalcParser.BinaryOperation2Context) {
         val left = doubleStack.pop()
         val right = doubleStack.pop()
-
-
         val result = when (val operator = ctx.operator?.type) {
             MiniCalcParser.Tokens.PLUS.id -> left + right
             MiniCalcParser.Tokens.MINUS.id -> right - left
@@ -69,6 +73,33 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
             MiniCalcParser.Tokens.DIVISION.id -> left / right
             else -> error("operator not implemented")
         }
+        doubleStack.push(result)
+    }
+
+    override fun enterValueReference(ctx: MiniCalcParser.ValueReferenceContext) {
+        idTypeStack.push(IDType.VARIABLE)
+    }
+
+    override fun enterFunctionCall1Expression(ctx: MiniCalcParser.FunctionCall1ExpressionContext) {
+        idTypeStack.push(IDType.FUNCTION1)
+    }
+    override fun exitFunctionCall1Expression(ctx: MiniCalcParser.FunctionCall1ExpressionContext) {
+        val function = functionStack.pop()
+        val argument = doubleStack.pop()
+
+        val result = function.invoke(doubleArrayOf(argument))
+        doubleStack.push(result)
+    }
+
+    override fun enterFunctionCall2Expression(ctx: MiniCalcParser.FunctionCall2ExpressionContext) {
+        idTypeStack.push(IDType.FUNCTION2)
+    }
+    override fun exitFunctionCall2Expression(ctx: MiniCalcParser.FunctionCall2ExpressionContext) {
+        val function = functionStack.pop()
+        val argument1 = doubleStack.pop()
+        val argument0 = doubleStack.pop()
+
+        val result = function.invoke(doubleArrayOf(argument0, argument1))
         doubleStack.push(result)
     }
 
@@ -81,7 +112,39 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
             doubleStack.push(node.text.toDouble())
         }
         if (type == MiniCalcParser.Tokens.ID.id) {
-            doubleStack.push(variables[node.text] ?: error("unresolved variable: '${node.text}'"))
+
+            when (val idType = idTypeStack.pop()) {
+                IDType.VARIABLE -> doubleStack.push(
+                    variables[node.text] ?: error("unresolved variable: '${node.text}'")
+                )
+                IDType.FUNCTION1 -> {
+                    val function: (DoubleArray) -> Double =
+                        when (val candidate = node.text) {
+                            "sqrt" -> { x -> sqrt(x[0]) }
+                            "radians" -> { x -> Math.toRadians(x[0]) }
+                            "degrees" -> { x -> Math.toDegrees(x[0]) }
+                            "cos" -> { x -> cos(x[0]) }
+                            "sin" -> { x -> sin(x[0]) }
+                            "acos" -> { x -> acos(x[0]) }
+                            "asin" -> { x -> asin(x[0]) }
+                            "exp" -> { x -> exp(x[0]) }
+                            "abs" -> { x -> abs(x[0]) }
+                            else -> error("unresolved function: '${candidate}'")
+                        }
+                    functionStack.push(function)
+                }
+                IDType.FUNCTION2 -> {
+                    val function: (DoubleArray) -> Double =
+                        when (val candidate = node.text) {
+                            "max" -> { x -> max(x[0], x[1]) }
+                            "min" -> { x -> min(x[0], x[1]) }
+                            "pow" -> { x -> x[0].pow(x[1]) }
+                            else -> error("unresolved function: '${candidate}'")
+                        }
+                    functionStack.push(function)
+                }
+                else -> error("unsupported id-type $idType")
+            }
         }
     }
 }

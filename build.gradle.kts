@@ -89,18 +89,13 @@ enum class Logging {
 val applicationLogging = Logging.FULL
 
 val kotlinVersion = "1.3.71"
-
+val spekVersion = "2.0.10"
 val antlrKotlinVersion = "94f8764bcf"
 
 buildscript {
-    // we have to re-declare this here :-(
     val antlrKotlinVersion = "94f8764bcf"
-    // you can also use a jitpack version (we have to re-declare this here):
-    //val antlrKotlinVersion = "86a86f1968"
 
     dependencies {
-        // add the plugin to the classpath
-
         classpath("com.strumenta.antlr-kotlin:antlr-kotlin-gradle-plugin:$antlrKotlinVersion")
     }
 
@@ -124,6 +119,9 @@ repositories {
     }
     maven(url = "https://dl.bintray.com/openrndr/openrndr")
     maven("https://jitpack.io")
+
+    maven("https://dl.bintray.com/spekframework/spek")
+
 }
 
 fun DependencyHandler.orx(module: String): Any {
@@ -142,15 +140,12 @@ fun DependencyHandler.orxNatives(module: String): Any {
     return "org.openrndr.extra:$module-natives-$openrndrOs:$orxVersion"
 }
 
-
-
 dependencies {
     implementation("com.strumenta.antlr-kotlin:antlr-kotlin-runtime-jvm:$antlrKotlinVersion")
     /*  This is where you add additional (third-party) dependencies */
 
 //    implementation("org.jsoup:jsoup:1.12.2")
     implementation("com.google.code.gson:gson:2.8.6")
-
 
     implementation("org.jetbrains.kotlin", "kotlin-reflect")
 
@@ -202,6 +197,12 @@ dependencies {
     implementation(kotlin("stdlib-jdk8"))
     testImplementation("junit", "junit", "4.12")
     //</editor-fold>
+
+    testImplementation("org.spekframework.spek2:spek-dsl-jvm:$spekVersion")
+    testImplementation("org.amshove.kluent:kluent:1.60")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:$kotlinVersion")
+    testRuntimeOnly("org.spekframework.spek2:spek-runner-junit5:$spekVersion")
+    testRuntimeOnly("org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
 }
 
 // --------------------------------------------------------------------------------------------------------------------
@@ -212,7 +213,6 @@ configure<JavaPluginConvention> {
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
 }
-
 
 // run generate task before build
 // not required if you add the generated sources to version control

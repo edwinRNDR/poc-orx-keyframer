@@ -17,6 +17,7 @@ STRING             : 'String';
 
 // Identifiers
 ID                 : [_]*[a-z][A-Za-z0-9_]* ;
+FUNCTION_ID        : [_]*[a-z][A-Za-z0-9_]* ;
 
 // Literals
 
@@ -31,6 +32,8 @@ DIVISION           : '/' ;
 ASSIGN             : '=' ;
 LPAREN             : '(' ;
 RPAREN             : ')' ;
+
+COMMA              : ',' ;
 
 STRING_OPEN        : '"' -> pushMode(MODE_IN_STRING);
 

@@ -23,11 +23,14 @@ assignment : ID ASSIGN expression ;
 
 expression : INTLIT                                                        # intLiteral
            | DECLIT                                                        # decimalLiteral
+           | ID LPAREN expression RPAREN                                   # functionCall1Expression
+           | ID LPAREN expression COMMA expression RPAREN                  # functionCall2Expression
            | ID                                                            # valueReference
            | LPAREN expression RPAREN                                      # parenExpression
            | MINUS expression                                              # minusExpression
            | expression operator=(DIVISION|ASTERISK) expression # binaryOperation1
            | expression operator=(PLUS|MINUS) expression        # binaryOperation2;
+
 type : DECIMAL # decimal
      | INT     # integer
      | STRING  # string ;
