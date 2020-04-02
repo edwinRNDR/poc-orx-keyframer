@@ -62,7 +62,7 @@ class Animation : Keyframer() {
     val color by RGBChannel(arrayOf("r", "g", "b"))
 }
 
-val animation = Keyframer()
+val animation = Animation()
 animation.loadFromJson(File("data/keyframes/animation.json"))
 ```
 
