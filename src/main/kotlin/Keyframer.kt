@@ -1,4 +1,4 @@
-package org.operndr.extra.keyframer
+package org.openrndr.extra.keyframer
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken

@@ -1,4 +1,4 @@
-package org.operndr.extra.keyframer
+package org.openrndr.extra.keyframer
 
 import org.antlr.v4.kotlinruntime.CharStreams
 import org.antlr.v4.kotlinruntime.CommonTokenStream

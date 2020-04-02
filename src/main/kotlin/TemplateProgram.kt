@@ -1,5 +1,5 @@
 import org.openrndr.application
-import org.operndr.extra.keyframer.Keyframer
+import org.openrndr.extra.keyframer.Keyframer
 import org.operndr.extras.filewatcher.watchFile
 import java.io.File
 

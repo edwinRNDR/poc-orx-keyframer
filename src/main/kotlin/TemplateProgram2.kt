@@ -3,8 +3,8 @@ import org.openrndr.panel.controlManager
 import org.openrndr.panel.elements.Range
 import org.openrndr.panel.elements.Slider
 import org.openrndr.panel.elements.slider
-import org.operndr.extra.keyframer.Keyframer
-import org.operndr.extra.keyframer.KeyframerFormat
+import org.openrndr.extra.keyframer.Keyframer
+import org.openrndr.extra.keyframer.KeyframerFormat
 import org.operndr.extras.filewatcher.watchFile
 import java.io.File
 

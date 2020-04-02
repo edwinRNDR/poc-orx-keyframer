@@ -1,4 +1,4 @@
-package org.operndr.extra.keyframer
+package org.openrndr.extra.keyframer
 
 import org.openrndr.extras.easing.Easing
 import org.openrndr.extras.easing.EasingFunction
