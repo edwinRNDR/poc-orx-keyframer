@@ -1,5 +1,5 @@
 import org.amshove.kluent.shouldBeNear
-import org.operndr.extra.keyframer.evaluateExpression
+import org.openrndr.extra.keyframer.evaluateExpression
 import org.spekframework.spek2.Spek
 import org.spekframework.spek2.style.specification.describe
 

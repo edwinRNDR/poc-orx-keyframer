@@ -42,8 +42,17 @@ class KeyframerChannel {
             return null
         }
         if (keys.size == 1) {
-            return keys[0].value
+            return if (time < keys.first().time) {
+                null
+            } else {
+                keys[0].value
+            }
         }
+
+        if (time < keys.first().time) {
+            return null
+        }
+
         val rightIndex = keys.indexOfFirst { it.time > time }
         return if (rightIndex == -1) {
             keys.last().value
