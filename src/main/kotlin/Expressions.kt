@@ -1,14 +1,11 @@
 package org.openrndr.extra.keyframer
 
-import org.antlr.v4.kotlinruntime.CharStreams
-import org.antlr.v4.kotlinruntime.CommonTokenStream
-import org.antlr.v4.kotlinruntime.tree.ErrorNode
-import org.antlr.v4.kotlinruntime.tree.ParseTreeWalker
-import org.antlr.v4.kotlinruntime.tree.TerminalNode
-import org.openrndr.extra.keyframer.antlr.MiniCalcLexer
-import org.openrndr.extra.keyframer.antlr.MiniCalcParser
-import org.openrndr.extra.keyframer.antlr.MiniCalcParserBaseListener
-import java.lang.Math.pow
+import org.antlr.v4.runtime.CharStreams
+import org.antlr.v4.runtime.CommonTokenStream
+import org.antlr.v4.runtime.tree.ErrorNode
+import org.antlr.v4.runtime.tree.ParseTreeWalker
+import org.antlr.v4.runtime.tree.TerminalNode
+import org.openrndr.extra.keyframer.antlr.*
 import java.lang.RuntimeException
 import java.util.*
 import kotlin.math.*
@@ -28,9 +25,11 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
 
     var lastExpressionResult: Double? = null
 
-    override fun visitErrorNode(node: ErrorNode) {
+
+
+    override fun visitErrorNode(node: ErrorNode?) {
         println("yo that's an error")
-        println(node.text)
+        println(node?.text)
     }
 
 
@@ -51,13 +50,11 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
     override fun exitBinaryOperation1(ctx: MiniCalcParser.BinaryOperation1Context) {
         val right = doubleStack.pop()
         val left = doubleStack.pop()
-
-
         val result = when (val operator = ctx.operator?.type) {
-            MiniCalcParser.Tokens.PLUS.id -> left + right
-            MiniCalcParser.Tokens.MINUS.id -> left - right
-            MiniCalcParser.Tokens.ASTERISK.id -> left * right
-            MiniCalcParser.Tokens.DIVISION.id -> left / right
+            MiniCalcParser.PLUS -> left + right
+            MiniCalcParser.MINUS -> left - right
+            MiniCalcParser.ASTERISK -> left * right
+            MiniCalcParser.DIVISION -> left / right
             else -> error("operator not implemented")
         }
         doubleStack.push(result)
@@ -67,10 +64,10 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
         val left = doubleStack.pop()
         val right = doubleStack.pop()
         val result = when (val operator = ctx.operator?.type) {
-            MiniCalcParser.Tokens.PLUS.id -> left + right
-            MiniCalcParser.Tokens.MINUS.id -> right - left
-            MiniCalcParser.Tokens.ASTERISK.id -> left * right
-            MiniCalcParser.Tokens.DIVISION.id -> left / right
+            MiniCalcParser.PLUS -> left + right
+            MiniCalcParser.MINUS -> right - left
+            MiniCalcParser.ASTERISK -> left * right
+            MiniCalcParser.DIVISION -> left / right
             else -> error("operator not implemented")
         }
         doubleStack.push(result)
@@ -105,13 +102,13 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
 
     override fun visitTerminal(node: TerminalNode) {
         val type = node.symbol?.type
-        if (type == MiniCalcParser.Tokens.INTLIT.id) {
+        if (type == MiniCalcParser.INTLIT) {
             doubleStack.push(node.text.toDouble())
         }
-        if (type == MiniCalcParser.Tokens.DECLIT.id) {
+        if (type == MiniCalcParser.DECLIT) {
             doubleStack.push(node.text.toDouble())
         }
-        if (type == MiniCalcParser.Tokens.ID.id) {
+        if (type == MiniCalcParser.ID) {
 
             when (val idType = idTypeStack.pop()) {
                 IDType.VARIABLE -> doubleStack.push(

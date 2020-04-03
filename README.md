@@ -89,28 +89,11 @@ Supported functions in expressions:
  - degrees(x), radians(x)
  - pow(x,y), sqrt(x), exp(x)
 
-Note that expressions have broken operator precedence, likely due to [this issue](https://github.com/Strumenta/antlr-kotlin/issues/22)
-
-
-## Future features
-
 [Parameters and prototypes](data/keyframes/circle-parametric.json)
 
 
 ## Using this as a library
 
- - clone and run ./gradlew publishToMavenLocal
+ - clone and run `./gradlew install`
  - in an openrndr-template based project set `orxUseSnapshot` to `true` (make sure you have a recent snapshot installed)
  - add `poc-orx-keyframer` to `openrndrFeatures`
- - the `repositories` section should look like this:
- ```repositories {
-        mavenCentral()
-        if (openrndrUseSnapshot || orxUseSnapshot) {
-            mavenLocal()
-        }
-        maven(url = "https://dl.bintray.com/openrndr/openrndr")
-    
-        maven("https://jitpack.io")
-        jcenter()
-    }
-```

@@ -1,5 +1,9 @@
 lexer grammar MiniCalcLexer;
 
+@header {
+package org.openrndr.extra.keyframer.antlr;
+}
+
 channels { WHITESPACE }
 
 // Whitespace

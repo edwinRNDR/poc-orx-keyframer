@@ -1,6 +1,10 @@
 
 parser grammar MiniCalcParser;
 
+@header {
+package org.openrndr.extra.keyframer.antlr;
+}
+
 options { tokenVocab=MiniCalcLexer; }
 
 miniCalcFile : lines=line+ ;
@@ -34,3 +38,5 @@ expression : INTLIT                                                        # int
 type : DECIMAL # decimal
      | INT     # integer
      | STRING  # string ;
+
+
