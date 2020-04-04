@@ -13,7 +13,6 @@ object TestKeyframerChannel : Spek({
             kfc.value(0.0) `should be` null
         }
     }
-
     describe("a keyframer channel with a single key") {
         val kfc = KeyframerChannel()
         kfc.add(0.0, 1.0, Easing.Linear.function)

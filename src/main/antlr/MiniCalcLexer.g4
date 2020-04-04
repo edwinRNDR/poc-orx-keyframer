@@ -30,6 +30,7 @@ INTLIT             : '0'|[0-9][0-9]* ;
 
 // Operators
 PLUS               : '+' ;
+PERCENTAGE         : '%' ;
 MINUS              : '-' ;
 ASTERISK           : '*' ;
 DIVISION           : '/' ;
@@ -76,6 +77,7 @@ INTERP_PLUS               : '+' -> type(PLUS) ;
 INTERP_MINUS              : '-' -> type(MINUS) ;
 INTERP_ASTERISK           : '*' -> type(ASTERISK) ;
 INTERP_DIVISION           : '/' -> type(DIVISION) ;
+INTERP_PERCENTAGE           : '%' -> type(PERCENTAGE) ;
 INTERP_ASSIGN             : '=' -> type(ASSIGN) ;
 INTERP_LPAREN             : '(' -> type(LPAREN) ;
 INTERP_RPAREN             : ')' -> type(RPAREN) ;

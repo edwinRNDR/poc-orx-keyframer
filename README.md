@@ -83,12 +83,14 @@ extend {
 [Expressions](data/keyframes/circle-expressions.json), expression mechanism. Currently uses values `r` to indicate repeat index and `t` the last used key time, `v` the last used value (for the animated attribute).
 
 Supported functions in expressions:
- - min(x, y), max(x, y)
- - cos(x), sin(x), acos(x), asin(x)
- - abs(x)
- - degrees(x), radians(x)
- - pow(x,y), sqrt(x), exp(x)
-
+ - `min(x, y)`, `max(x, y)`
+ - `cos(x)`, `sin(x)`, `acos(x)`, `asin(x)`
+ - `abs(x)`, `saturate(x)`
+ - `degrees(x)`, `radians(x)`
+ - `pow(x,y)`, `sqrt(x)`, `exp(x)`
+ - `mix(left, right, x)`
+ - `smoothstep(t0, t1, x)`
+ - `map(leftBefore, rightBefore, leftAfter, rightAfter, x)`
 [Parameters and prototypes](data/keyframes/circle-parametric.json)
 
 

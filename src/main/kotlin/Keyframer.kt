@@ -1,6 +1,7 @@
 package org.openrndr.extra.keyframer
 
 import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
 import org.openrndr.color.ColorRGBa
 import org.openrndr.extras.easing.Easing
@@ -91,20 +92,48 @@ open class Keyframer {
 
     val channels = mutableMapOf<String, KeyframerChannel>()
 
-    fun loadFromJson(file: File, format: KeyframerFormat = KeyframerFormat.SIMPLE, parameters:Map<String, Double> = emptyMap()) {
+    fun loadFromJson(
+        file: File,
+        format: KeyframerFormat = KeyframerFormat.SIMPLE,
+        parameters: Map<String, Double> = emptyMap()
+    ) {
+        require(file.exists()) {
+            "failed to load keyframer from json: '${file.absolutePath}' does not exist."
+        }
+        try {
+            loadFromJsonString(file.readText(), format, parameters)
+        } catch (e: Throwable) {
+            error("Error loading from '${file.path}': ${e.message?:""}")
+        }
+    }
+
+    fun loadFromJsonString(
+        json: String,
+        format: KeyframerFormat = KeyframerFormat.SIMPLE,
+        parameters: Map<String, Double> = emptyMap()
+    ) {
         when (format) {
             KeyframerFormat.SIMPLE -> {
-                val type = object : TypeToken<List<Map<String, Any>>>() {}.type
-                val keys : List<MutableMap<String, Any>> = Gson().fromJson(file.readText(), type)
-                loadFromObjects(keys, parameters)
+                try {
+                    val type = object : TypeToken<List<Map<String, Any>>>() {}.type
+                    val keys: List<MutableMap<String, Any>> = Gson().fromJson(json, type)
+                    loadFromKeyObjects(keys, parameters)
+                } catch (e: JsonSyntaxException) {
+                    error("Error parsing simple Keyframer data: ${e.cause?.message}")
+                }
             }
             KeyframerFormat.FULL -> {
-                val type = object : TypeToken<Map<String, Any>>() {}.type
-                val keys : Map<String, Any> = Gson().fromJson(file.readText(), type)
-                loadFromObjects(keys, parameters)
+                try {
+                    val type = object : TypeToken<Map<String, Any>>() {}.type
+                    val keys: Map<String, Any> = Gson().fromJson(json, type)
+                    loadFromObjects(keys, parameters)
+                } catch(e: JsonSyntaxException) {
+                    error("Error parsing full Keyframer data: ${e.cause?.message}")
+                }
             }
         }
     }
+
 
     val parameters = mutableMapOf<String, Double>()
     val prototypes = mutableMapOf<String, Map<String, Any>>()
@@ -116,13 +145,17 @@ open class Keyframer {
         prototypes.clear()
         (dict["parameters"] as? Map<String, Any>)?.let { lp ->
             for (entry in lp) {
-                this.parameters[entry.key] = when (val candidate = entry.value) {
-                    is Double -> candidate
-                    is String -> evaluateExpression(candidate, parameters)
-                        ?: error("could not evaluate expression: '$candidate'")
-                    is Int -> candidate.toDouble()
-                    is Float -> candidate.toDouble()
-                    else -> error("unknown type for parameter '${entry.key}'")
+                this.parameters[entry.key] = try {
+                    when (val candidate = entry.value) {
+                        is Double -> candidate
+                        is String -> evaluateExpression(candidate, parameters)
+                            ?: error("could not evaluate expression: '$candidate'")
+                        is Int -> candidate.toDouble()
+                        is Float -> candidate.toDouble()
+                        else -> error("unknown type for parameter '${entry.key}'")
+                    }
+                } catch (e: Throwable) {
+                    error("")
                 }
             }
         }
@@ -133,11 +166,11 @@ open class Keyframer {
         }
 
         (dict["keys"] as? List<Map<String, Any>>)?.let { keys ->
-            loadFromObjects(keys, parameters)
+            loadFromKeyObjects(keys, parameters)
         }
     }
 
-    fun resolvePrototype(prototypeNames:String) : Map<String, Any> {
+    fun resolvePrototype(prototypeNames: String): Map<String, Any> {
         val prototypeTokens = prototypeNames.split(" ").map { it.trim() }.filter { it.isNotBlank() }
         val prototypeRefs = prototypeTokens.mapNotNull { prototypes[it] }
 
@@ -148,7 +181,7 @@ open class Keyframer {
         return computed
     }
 
-    fun loadFromObjects(keys: List<Map<String, Any>>, externalParameters : Map<String, Double>) {
+    fun loadFromKeyObjects(keys: List<Map<String, Any>>, externalParameters: Map<String, Double>) {
 
         if (externalParameters !== parameters) {
             parameters.clear()
@@ -174,7 +207,8 @@ open class Keyframer {
         expressionContext.putAll(parameters)
         expressionContext["t"] = 0.0
 
-        fun handleKey(key: Map<String, Any>) {
+
+        fun handleKey(key: Map<String, Any>, path: String) {
 
             val prototype = (key["prototypes"] as? String)?.let {
                 resolvePrototype(it)
@@ -184,50 +218,62 @@ open class Keyframer {
             computed.putAll(prototype)
             computed.putAll(key)
 
-            val time = when (val candidate = computed["time"]) {
-                null -> lastTime
-                is String -> evaluateExpression(candidate, expressionContext)
-                    ?: error { "unknown value format for time : $candidate" }
-                is Double -> candidate
-                is Int -> candidate.toDouble()
-                is Float -> candidate.toDouble()
-                else -> error("unknown time format for '$candidate'")
-            }
-
-            val duration = when (val candidate = computed["duration"]) {
-                null -> 0.0
-                is String -> evaluateExpression(candidate, expressionContext)
-                    ?: error { "unknown value format for time : $candidate" }
-                is Int -> candidate.toDouble()
-                is Float -> candidate.toDouble()
-                is Double -> candidate
-                else -> error("unknown duration type for '$candidate")
-            }
-
-            val easing = when (val easingCandidate = computed["easing"]) {
-                null -> Easing.Linear.function
-                is String -> when (easingCandidate) {
-                    "linear" -> Easing.Linear.function
-                    "cubic-in" -> Easing.CubicIn.function
-                    "cubic-out" -> Easing.CubicOut.function
-                    "cubic-in-out" -> Easing.CubicInOut.function
-                    "quad-in" -> Easing.QuadIn.function
-                    "quad-out" -> Easing.QuadOut.function
-                    "quad-in-out" -> Easing.QuadInOut.function
-                    "quart-in" -> Easing.QuartIn.function
-                    "quart-out" -> Easing.QuartOut.function
-                    "quart-in-out" -> Easing.QuartInOut.function
-                    "quint-in" -> Easing.QuintIn.function
-                    "quint-out" -> Easing.QuintOut.function
-                    "quint-in-out" -> Easing.QuintInOut.function
-                    "expo-in" -> Easing.ExpoIn.function
-                    "expo-out" -> Easing.ExpoOut.function
-                    "expo-in-out" -> Easing.ExpoInOut.function
-                    "one" -> Easing.One.function
-                    "zero" -> Easing.Zero.function
-                    else -> error { "unknown easing name '$easingCandidate" }
+            val time = try {
+                when (val candidate = computed["time"]) {
+                    null -> lastTime
+                    is String -> evaluateExpression(candidate, expressionContext)
+                        ?: error { "unknown value format for time : $candidate" }
+                    is Double -> candidate
+                    is Int -> candidate.toDouble()
+                    is Float -> candidate.toDouble()
+                    else -> error("unknown time format for '$candidate'")
                 }
-                else -> error { "unknown easing for '$easingCandidate" }
+            } catch (e: Throwable) {
+                error("error in $path.'time': ${e.message ?: ""}")
+            }
+
+            val duration = try {
+                when (val candidate = computed["duration"]) {
+                    null -> 0.0
+                    is String -> evaluateExpression(candidate, expressionContext)
+                        ?: error { "unknown value format for time : $candidate" }
+                    is Int -> candidate.toDouble()
+                    is Float -> candidate.toDouble()
+                    is Double -> candidate
+                    else -> error("unknown duration type for '$candidate")
+                }
+            } catch (e: Throwable) {
+                error("error in $path.'duration': ${e.message ?: ""}")
+            }
+
+            val easing = try {
+                when (val easingCandidate = computed["easing"]) {
+                    null -> Easing.Linear.function
+                    is String -> when (easingCandidate) {
+                        "linear" -> Easing.Linear.function
+                        "cubic-in" -> Easing.CubicIn.function
+                        "cubic-out" -> Easing.CubicOut.function
+                        "cubic-in-out" -> Easing.CubicInOut.function
+                        "quad-in" -> Easing.QuadIn.function
+                        "quad-out" -> Easing.QuadOut.function
+                        "quad-in-out" -> Easing.QuadInOut.function
+                        "quart-in" -> Easing.QuartIn.function
+                        "quart-out" -> Easing.QuartOut.function
+                        "quart-in-out" -> Easing.QuartInOut.function
+                        "quint-in" -> Easing.QuintIn.function
+                        "quint-out" -> Easing.QuintOut.function
+                        "quint-in-out" -> Easing.QuintInOut.function
+                        "expo-in" -> Easing.ExpoIn.function
+                        "expo-out" -> Easing.ExpoOut.function
+                        "expo-in-out" -> Easing.ExpoInOut.function
+                        "one" -> Easing.One.function
+                        "zero" -> Easing.Zero.function
+                        else -> error("unknown easing name '$easingCandidate'")
+                    }
+                    else -> error("unknown easing for '$easingCandidate'")
+                }
+            } catch (e: Throwable) {
+                error("error in $path.'easing': ${e.message ?: ""}")
             }
 
             val holdCandidate = computed["hold"]
@@ -241,12 +287,16 @@ open class Keyframer {
                         KeyframerChannel()
                     }
                     expressionContext["v"] = channel.lastValue() ?: 0.0
-                    val value = when (val candidate = channelCandidate.value) {
-                        is Double -> candidate
-                        is String -> evaluateExpression(candidate, expressionContext)
-                            ?: error { "unknown value format for key '${channelCandidate.key}' : $candidate" }
-                        is Int -> candidate.toDouble()
-                        else -> error { "unknown value type for key '${channelCandidate.key}' : $candidate" }
+                    val value = try {
+                        when (val candidate = channelCandidate.value) {
+                            is Double -> candidate
+                            is String -> evaluateExpression(candidate, expressionContext)
+                                ?: error("unknown value format for key '${channelCandidate.key}' : $candidate")
+                            is Int -> candidate.toDouble()
+                            else -> error("unknown value type for key '${channelCandidate.key}' : $candidate")
+                        }
+                    } catch (e: Throwable) {
+                        error("error in $path.'${channelCandidate.key}': ${e.message ?: ""}")
                     }
                     channel.add(time, value, easing, hold)
                 }
@@ -256,12 +306,17 @@ open class Keyframer {
 
             if (computed.containsKey("repeat")) {
                 val repeatObject = computed["repeat"] as? Map<String, Any> ?: error("'repeat' should be a map")
-                val count = when (val candidate = repeatObject["count"]) {
-                    null -> 1
-                    is Int -> candidate
-                    is Double -> candidate.toInt()
-                    is String -> evaluateExpression(candidate, expressionContext)?.roundToInt() ?: error("cannot evaluate expression for count: '$candidate'")
-                    else -> error("unknown value type for count: '$candidate")
+                val count = try {
+                    when (val candidate = repeatObject["count"]) {
+                        null -> 1
+                        is Int -> candidate
+                        is Double -> candidate.toInt()
+                        is String -> evaluateExpression(candidate, expressionContext)?.roundToInt()
+                            ?: error("cannot evaluate expression for count: '$candidate'")
+                        else -> error("unknown value type for count: '$candidate")
+                    }
+                } catch (e: Throwable) {
+                    error("error in $path.repeat.'count': ${e.message ?: ""}")
                 }
 
                 val keys = repeatObject["keys"] as? List<Map<String, Any>> ?: error("no repeat keys")
@@ -269,14 +324,14 @@ open class Keyframer {
                 for (i in 0 until count) {
                     expressionContext["r"] = i.toDouble()
                     for (key in keys) {
-                        handleKey(key)
+                        handleKey(key, "$path.repeat")
                     }
                 }
             }
         }
 
-        for (key in keys) {
-            handleKey(key)
+        for ((index, key) in keys.withIndex()) {
+            handleKey(key, "keys[$index]")
         }
     }
 }
