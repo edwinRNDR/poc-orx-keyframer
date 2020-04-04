@@ -1,6 +1,7 @@
 import org.amshove.kluent.`should throw`
 import org.amshove.kluent.`with message`
 import org.amshove.kluent.invoking
+import org.openrndr.extra.keyframer.ExpressionException
 import org.openrndr.extra.keyframer.evaluateExpression
 import org.spekframework.spek2.Spek
 import org.spekframework.spek2.style.specification.describe
@@ -13,7 +14,7 @@ object TestExpressionErrors : Spek({
         it("should cause an exception to be thrown when evaluated") {
             invoking {
                 evaluateExpression(expression)
-            } `should throw`  IllegalStateException::class `with message` "parser error in expression: ')('; [line: 1, character: 0 , near: [@0,0:0=')',<21>,1:0] ]"
+            } `should throw`  ExpressionException::class `with message` "parser error in expression: ')('; [line: 1, character: 0 , near: [@0,0:0=')',<21>,1:0] ]"
         }
     }
 
@@ -22,7 +23,7 @@ object TestExpressionErrors : Spek({
         it("should cause an exception to be thrown when evaluated") {
             invoking {
                 evaluateExpression(expression)
-            }  `should throw` IllegalStateException::class `with message` "parser error in expression: 'a == 5'; [line: 1, character: 3 , near: [@3,3:3='=',<19>,1:3] ]"
+            }  `should throw` ExpressionException::class `with message` "parser error in expression: 'a == 5'; [line: 1, character: 3 , near: [@3,3:3='=',<19>,1:3] ]"
         }
     }
 
@@ -31,7 +32,7 @@ object TestExpressionErrors : Spek({
         it("should cause an exception to be thrown when evaluated") {
             invoking {
                evaluateExpression(expression)
-            } `should throw` IllegalStateException::class `with message` "parser error in expression: '3 = 5'; [line: 1, character: 2 , near: [@2,2:2='=',<19>,1:2] ]"
+            } `should throw` ExpressionException::class `with message` "parser error in expression: '3 = 5'; [line: 1, character: 2 , near: [@2,2:2='=',<19>,1:2] ]"
         }
     }
 
@@ -40,7 +41,7 @@ object TestExpressionErrors : Spek({
         it("should cause an exception to be thrown when evaluated") {
             invoking {
                 evaluateExpression(expression)
-            } `should throw` RuntimeException::class `with message` "error in evaluation of 'notExisting(5)': unresolved function: 'notExisting'"
+            } `should throw` ExpressionException::class `with message` "error in evaluation of 'notExisting(5)': unresolved function: 'notExisting'"
         }
     }
 
@@ -49,7 +50,7 @@ object TestExpressionErrors : Spek({
         it("should cause an exception to be thrown when evaluated") {
             invoking {
                 evaluateExpression(expression)
-            } `should throw` RuntimeException::class `with message` "error in evaluation of 'notExisting+4': unresolved variable: 'notExisting'"
+            } `should throw` ExpressionException::class `with message` "error in evaluation of 'notExisting+4': unresolved variable: 'notExisting'"
         }
     }
 

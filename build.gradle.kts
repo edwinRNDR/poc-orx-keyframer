@@ -107,7 +107,6 @@ repositories {
         mavenLocal()
     }
     maven(url = "https://dl.bintray.com/openrndr/openrndr")
-    maven("https://jitpack.io")
 
     maven("https://dl.bintray.com/spekframework/spek")
 
@@ -132,6 +131,8 @@ fun DependencyHandler.orxNatives(module: String): Any {
 dependencies {
 
     antlr("org.antlr:antlr4:4.8-1")
+
+    implementation("org.antlr:antlr4-runtime:4.8-1")
 
     /*  This is where you add additional (third-party) dependencies */
 

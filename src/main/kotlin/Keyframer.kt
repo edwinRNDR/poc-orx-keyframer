@@ -102,8 +102,8 @@ open class Keyframer {
         }
         try {
             loadFromJsonString(file.readText(), format, parameters)
-        } catch (e: Throwable) {
-            error("Error loading from '${file.path}': ${e.message?:""}")
+        } catch (e: ExpressionException) {
+            throw ExpressionException("Error loading from '${file.path}': ${e.message?:""}")
         }
     }
 
@@ -154,8 +154,8 @@ open class Keyframer {
                         is Float -> candidate.toDouble()
                         else -> error("unknown type for parameter '${entry.key}'")
                     }
-                } catch (e: Throwable) {
-                    error("")
+                } catch (e: ExpressionException) {
+                    throw ExpressionException("parameters")
                 }
             }
         }
@@ -228,8 +228,8 @@ open class Keyframer {
                     is Float -> candidate.toDouble()
                     else -> error("unknown time format for '$candidate'")
                 }
-            } catch (e: Throwable) {
-                error("error in $path.'time': ${e.message ?: ""}")
+            } catch (e: ExpressionException) {
+                throw ExpressionException("error in $path.'time': ${e.message ?: ""}")
             }
 
             val duration = try {
@@ -242,8 +242,8 @@ open class Keyframer {
                     is Double -> candidate
                     else -> error("unknown duration type for '$candidate")
                 }
-            } catch (e: Throwable) {
-                error("error in $path.'duration': ${e.message ?: ""}")
+            } catch (e: ExpressionException) {
+                throw ExpressionException("error in $path.'duration': ${e.message ?: ""}")
             }
 
             val easing = try {
@@ -272,8 +272,8 @@ open class Keyframer {
                     }
                     else -> error("unknown easing for '$easingCandidate'")
                 }
-            } catch (e: Throwable) {
-                error("error in $path.'easing': ${e.message ?: ""}")
+            } catch (e: ExpressionException) {
+                throw ExpressionException("error in $path.'easing': ${e.message ?: ""}")
             }
 
             val holdCandidate = computed["hold"]
@@ -295,8 +295,8 @@ open class Keyframer {
                             is Int -> candidate.toDouble()
                             else -> error("unknown value type for key '${channelCandidate.key}' : $candidate")
                         }
-                    } catch (e: Throwable) {
-                        error("error in $path.'${channelCandidate.key}': ${e.message ?: ""}")
+                    } catch (e: ExpressionException) {
+                        throw ExpressionException("error in $path.'${channelCandidate.key}': ${e.message ?: ""}")
                     }
                     channel.add(time, value, easing, hold)
                 }
@@ -315,8 +315,8 @@ open class Keyframer {
                             ?: error("cannot evaluate expression for count: '$candidate'")
                         else -> error("unknown value type for count: '$candidate")
                     }
-                } catch (e: Throwable) {
-                    error("error in $path.repeat.'count': ${e.message ?: ""}")
+                } catch (e: ExpressionException) {
+                    throw ExpressionException("error in $path.repeat.'count': ${e.message ?: ""}")
                 }
 
                 val keys = repeatObject["keys"] as? List<Map<String, Any>> ?: error("no repeat keys")

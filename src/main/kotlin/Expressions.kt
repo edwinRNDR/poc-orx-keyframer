@@ -8,8 +8,6 @@ import org.openrndr.math.map
 import org.openrndr.math.mix
 import org.openrndr.math.mod
 import org.openrndr.math.smoothstep
-import java.lang.IllegalArgumentException
-import java.lang.RuntimeException
 import java.util.*
 import kotlin.math.*
 
@@ -30,12 +28,12 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
     val idTypeStack = Stack<IDType>()
     var lastExpressionResult: Double? = null
 
-    val exceptionStack = Stack<Throwable>()
+    val exceptionStack = Stack<ExpressionException>()
 
 
     override fun exitExpressionStatement(ctx: MiniCalcParser.ExpressionStatementContext) {
         ifError {
-            throw RuntimeException("error in evaluation of '${ctx.text}': ${it.message?:""}")
+            throw ExpressionException("error in evaluation of '${ctx.text}': ${it.message?:""}")
         }
         val result = doubleStack.pop()
         lastExpressionResult = result
@@ -193,7 +191,7 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
     }
 
     private fun pushError(message: String) {
-        exceptionStack.push(IllegalArgumentException(message))
+        exceptionStack.push(ExpressionException(message))
     }
 
     private inline fun ifError(f: (e:Throwable) -> Unit) {
@@ -277,22 +275,24 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
     }
 }
 
+class ExpressionException(message: String) : RuntimeException(message)
+
 fun evaluateExpression(input: String, variables: Map<String, Double> = emptyMap()): Double? {
     val lexer = MiniCalcLexer(CharStreams.fromString(input))
-
-    lexer.removeErrorListeners()
-    lexer.addErrorListener(object : BaseErrorListener() {
-        override fun syntaxError(
-            recognizer: Recognizer<*, *>?,
-            offendingSymbol: Any?,
-            line: Int,
-            charPositionInLine: Int,
-            msg: String?,
-            e: RecognitionException?
-        ) {
-            println("syntax error!")
-        }
-    })
+//
+//    lexer.removeErrorListeners()
+//    lexer.addErrorListener(object : BaseErrorListener() {
+//        override fun syntaxError(
+//            recognizer: Recognizer<*, *>?,
+//            offendingSymbol: Any?,
+//            line: Int,
+//            charPositionInLine: Int,
+//            msg: String?,
+//            e: RecognitionException?
+//        ) {
+//            println("syntax error!")
+//        }
+//    })
     val parser = MiniCalcParser(CommonTokenStream(lexer))
     parser.removeErrorListeners()
     parser.addErrorListener(object : BaseErrorListener() {
@@ -304,7 +304,7 @@ fun evaluateExpression(input: String, variables: Map<String, Double> = emptyMap(
             msg: String?,
             e: RecognitionException?
         ) {
-            error("parser error in expression: '$input'; [line: $line, character: $charPositionInLine ${offendingSymbol?.let { ", near: $it" } ?: ""} ]")
+            throw ExpressionException("parser error in expression: '$input'; [line: $line, character: $charPositionInLine ${offendingSymbol?.let { ", near: $it" } ?: ""} ]")
         }
     })
 
@@ -313,8 +313,8 @@ fun evaluateExpression(input: String, variables: Map<String, Double> = emptyMap(
     listener.variables.putAll(variables)
     try {
         ParseTreeWalker.DEFAULT.walk(listener, root)
-    } catch (e: Throwable) {
-        throw RuntimeException(e.message)
+    } catch (e: ExpressionException) {
+        throw ExpressionException(e.message?:"")
     }
     return listener.lastExpressionResult
 }
