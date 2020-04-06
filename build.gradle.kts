@@ -97,7 +97,6 @@ plugins {
     java
     kotlin("jvm") version ("1.3.71")
     maven
-
 }
 
 repositories {
@@ -128,46 +127,41 @@ fun DependencyHandler.orxNatives(module: String): Any {
     return "org.openrndr.extra:$module-natives-$openrndrOs:$orxVersion"
 }
 
+val demo = sourceSets.create("demo") {
+    java.srcDir("src/demo/kotlin")
+}
+tasks.getByName(demo.compileJavaTaskName) {
+    dependsOn("compileKotlin")
+}
+
 dependencies {
+    "demoRuntimeOnly"(openrndr("gl3"))
+    "demoRuntimeOnly"(openrndrNatives("gl3"))
+    "demoImplementation"(openrndr("openal"))
+    "demoRuntimeOnly"(openrndrNatives("openal"))
+    "demoImplementation"(openrndr("core"))
+    "demoImplementation"(openrndr("svg"))
+    "demoImplementation"(openrndr("animatable"))
+    "demoImplementation"(openrndr("extensions"))
+    "demoImplementation"(openrndr("filter"))
+    "demoImplementation"(orx("orx-file-watcher"))
+    "demoImplementation"(orx("orx-easing"))
+    "demoImplementation"(orx("orx-panel"))
+    "demoImplementation"(sourceSets.getByName("main").output)
+    "demoImplementation"(kotlin("stdlib-jdk8"))
+    "demoImplementation"("org.antlr:antlr4-runtime:4.8-1")
+    "demoImplementation"("com.google.code.gson:gson:2.8.6")
+    "demoRuntimeOnly"("org.apache.logging.log4j", "log4j-slf4j-impl", "2.13.1")
+    "demoRuntimeOnly"("com.fasterxml.jackson.core", "jackson-databind", "2.10.3")
+    "demoRuntimeOnly"("com.fasterxml.jackson.dataformat", "jackson-dataformat-yaml", "2.10.3")
 
     antlr("org.antlr:antlr4:4.8-1")
 
-    implementation("org.antlr:antlr4-runtime:4.8-1")
-
-    /*  This is where you add additional (third-party) dependencies */
-
-//    implementation("org.jsoup:jsoup:1.12.2")
-    implementation("com.google.code.gson:gson:2.8.6")
-
-    implementation("org.jetbrains.kotlin", "kotlin-reflect")
-
-    //<editor-fold desc="Managed dependencies">
-    runtimeOnly(openrndr("gl3"))
-    runtimeOnly(openrndrNatives("gl3"))
-    implementation(openrndr("openal"))
-    runtimeOnly(openrndrNatives("openal"))
     implementation(openrndr("core"))
-    implementation(openrndr("svg"))
-    implementation(openrndr("animatable"))
-    implementation(openrndr("extensions"))
-    implementation(openrndr("filter"))
-
-    implementation("org.jetbrains.kotlinx", "kotlinx-coroutines-core", "1.3.5")
+    implementation("org.antlr:antlr4-runtime:4.8-1")
+    implementation("com.google.code.gson:gson:2.8.6")
+    implementation("org.jetbrains.kotlin", "kotlin-reflect")
     implementation("io.github.microutils", "kotlin-logging", "1.7.9")
-
-    when (applicationLogging) {
-        Logging.NONE -> {
-            runtimeOnly("org.slf4j", "slf4j-nop", "1.7.30")
-        }
-        Logging.SIMPLE -> {
-            runtimeOnly("org.slf4j", "slf4j-simple", "1.7.30")
-        }
-        Logging.FULL -> {
-            runtimeOnly("org.apache.logging.log4j", "log4j-slf4j-impl", "2.13.1")
-            runtimeOnly("com.fasterxml.jackson.core", "jackson-databind", "2.10.3")
-            runtimeOnly("com.fasterxml.jackson.dataformat", "jackson-dataformat-yaml", "2.10.3")
-        }
-    }
 
     if ("video" in openrndrFeatures) {
         implementation(openrndr("ffmpeg"))
@@ -178,17 +172,8 @@ dependencies {
         implementation(orx(feature))
     }
 
-    if ("orx-kinect-v1" in orxFeatures) {
-        runtimeOnly(orxNatives("orx-kinect-v1"))
-    }
-
-    if ("orx-olive" in orxFeatures) {
-        implementation("org.jetbrains.kotlin", "kotlin-scripting-compiler-embeddable")
-    }
-
     implementation(kotlin("stdlib-jdk8"))
     testImplementation("junit", "junit", "4.12")
-    //</editor-fold>
 
     testImplementation("org.spekframework.spek2:spek-dsl-jvm:$spekVersion")
     testImplementation("org.amshove.kluent:kluent:1.60")
@@ -217,11 +202,10 @@ tasks.generateGrammarSource {
         .srcDir("src/main/antlr").apply {
             include("*.g4")
         }
-
 }
+
 sourceSets.getByName("main") {
     java.srcDir("src/main/java")
     java.srcDir("src/main/kotlin")
     java.srcDir("build/generated-src/antlr")
 }
-
