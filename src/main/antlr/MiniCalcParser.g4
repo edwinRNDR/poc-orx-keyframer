@@ -27,6 +27,7 @@ assignment : ID ASSIGN expression ;
 
 expression : INTLIT                                                        # intLiteral
            | DECLIT                                                        # decimalLiteral
+           | ID LPAREN RPAREN                                              # functionCall0Expression
            | ID LPAREN expression RPAREN                                   # functionCall1Expression
            | ID LPAREN expression COMMA expression RPAREN                  # functionCall2Expression
            | ID LPAREN expression COMMA expression COMMA expression RPAREN # functionCall3Expression
