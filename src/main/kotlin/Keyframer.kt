@@ -56,6 +56,10 @@ open class Keyframer {
         }
     }
 
+    val duration: Double
+        get() = channels.values.maxBy { it.duration() }?.duration() ?: 0.0
+
+
     inner class DoubleChannel(key: String, defaultValue: Double = 0.0) :
         CompoundChannel(arrayOf(key), arrayOf(defaultValue)) {
         operator fun getValue(keyframer: Keyframer, property: KProperty<*>): Double = getValue(0)
@@ -103,7 +107,7 @@ open class Keyframer {
         try {
             loadFromJsonString(file.readText(), format, parameters)
         } catch (e: ExpressionException) {
-            throw ExpressionException("Error loading from '${file.path}': ${e.message?:""}")
+            throw ExpressionException("Error loading from '${file.path}': ${e.message ?: ""}")
         }
     }
 
@@ -127,7 +131,7 @@ open class Keyframer {
                     val type = object : TypeToken<Map<String, Any>>() {}.type
                     val keys: Map<String, Any> = Gson().fromJson(json, type)
                     loadFromObjects(keys, parameters)
-                } catch(e: JsonSyntaxException) {
+                } catch (e: JsonSyntaxException) {
                     error("Error parsing full Keyframer data: ${e.cause?.message}")
                 }
             }
@@ -155,7 +159,7 @@ open class Keyframer {
                         else -> error("unknown type for parameter '${entry.key}'")
                     }
                 } catch (e: ExpressionException) {
-                    throw ExpressionException("parameters")
+                    throw ExpressionException("error in 'parameters': ${e.message?:""} ")
                 }
             }
         }

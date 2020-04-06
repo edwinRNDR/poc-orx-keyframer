@@ -213,7 +213,10 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
 
             when (val idType = idTypeStack.pop()) {
                 IDType.VARIABLE -> doubleStack.push(
-                    variables[node.text] ?: errorValue("unresolved variable: '${node.text}'", 0.0 / 0.0)
+                    when (val name = node.text) {
+                        "PI" -> PI
+                        else -> variables[node.text] ?: errorValue("unresolved variable: '${node.text}'", 0.0 / 0.0)
+                    }
                 )
                 IDType.FUNCTION1 -> {
                     val function: (DoubleArray) -> Double =
@@ -233,7 +236,7 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
                             "ceil" -> { x -> ceil(x[0]) }
                             "saturate" -> { x -> x[0].coerceIn(0.0, 1.0) }
                             else -> errorValue(
-                                "unresolved function: '${candidate}'"
+                                "unresolved function: '${candidate}(x0)'"
                             ) { x -> error("this is the error function") }
                         }
                     functionStack.push(function)
@@ -246,7 +249,7 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
                             "pow" -> { x -> x[0].pow(x[1]) }
                             "atan2" -> { x -> atan2(x[0], x[1]) }
                             else -> errorValue(
-                                "unresolved function: '${candidate}'"
+                                "unresolved function: '${candidate}(x0, x1)'"
                             ) { x -> error("this is the error function") }
                         }
                     functionStack.push(function)
@@ -257,7 +260,7 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
                             "mix" -> { x -> mix(x[0], x[1], x[2]) }
                             "smoothstep" -> { x -> smoothstep(x[0], x[1], x[2]) }
                             else -> errorValue(
-                                "unresolved function: '${candidate}'"
+                                "unresolved function: '${candidate}(x0, x1, x2)'"
                             ) { x -> error("this is the error function") }
                         }
                     functionStack.push(function)
@@ -267,7 +270,7 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
                         when (val candidate = node.text) {
                             "map" -> { x -> map(x[0], x[1], x[2], x[3], x[4]) }
                             else -> errorValue(
-                                "unresolved function: '${candidate}'"
+                                "unresolved function: '${candidate}(x0, x1, x2, x3, x4)'"
                             ) { x -> error("this is the error function") }
                         }
                     functionStack.push(function)
