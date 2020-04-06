@@ -12,6 +12,26 @@ import org.openrndr.math.smoothstep
 import java.util.*
 import kotlin.math.*
 
+typealias Function0 = () -> Double
+typealias Function1 = (Double) -> Double
+typealias Function2 = (Double, Double) -> Double
+typealias Function3 = (Double, Double, Double) -> Double
+typealias Function4 = (Double, Double, Double, Double) -> Double
+typealias Function5 = (Double, Double, Double, Double, Double) -> Double
+
+class FunctionExtensions(
+    val functions0: Map<String, Function0> = emptyMap(),
+    val functions1: Map<String, Function1> = emptyMap(),
+    val functions2: Map<String, Function2> = emptyMap(),
+    val functions3: Map<String, Function3> = emptyMap(),
+    val functions4: Map<String, Function4> = emptyMap(),
+    val functions5: Map<String, Function5> = emptyMap()
+) {
+    companion object {
+        val EMPTY = FunctionExtensions()
+    }
+}
+
 internal enum class IDType {
     VARIABLE,
     FUNCTION0,
@@ -22,7 +42,8 @@ internal enum class IDType {
     FUNCTION5
 }
 
-internal class ExpressionListener : MiniCalcParserBaseListener() {
+internal class ExpressionListener(val functions: FunctionExtensions = FunctionExtensions.EMPTY) :
+    MiniCalcParserBaseListener() {
     val doubleStack = Stack<Double>()
     val functionStack = Stack<(DoubleArray) -> Double>()
     val variables = mutableMapOf<String, Double>()
@@ -64,7 +85,7 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
             MiniCalcParser.ASTERISK -> left * right
             MiniCalcParser.DIVISION -> left / right
             MiniCalcParser.PERCENTAGE -> mod(left, right)
-            else -> error("operator not implemented")
+            else -> error("operator '$operator' not implemented")
         }
         doubleStack.push(result)
     }
@@ -82,7 +103,7 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
             MiniCalcParser.MINUS -> right - left
             MiniCalcParser.ASTERISK -> left * right
             MiniCalcParser.DIVISION -> left / right
-            else -> error("operator not implemented")
+            else -> error("operator '$operator' not implemented")
         }
         doubleStack.push(result)
     }
@@ -228,11 +249,12 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
         }
         if (type == MiniCalcParser.ID) {
 
+            @Suppress("DIVISION_BY_ZERO")
             when (val idType = idTypeStack.pop()) {
                 IDType.VARIABLE -> doubleStack.push(
                     when (val name = node.text) {
                         "PI" -> PI
-                        else -> variables[node.text] ?: errorValue("unresolved variable: '${node.text}'", 0.0 / 0.0)
+                        else -> variables[name] ?: errorValue("unresolved variable: '${name}'", 0.0 / 0.0)
                     }
                 )
 
@@ -240,9 +262,10 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
                     val function: (DoubleArray) -> Double =
                         when (val candidate = node.text) {
                             "random" -> { _ -> Double.uniform(0.0, 1.0) }
-                            else -> errorValue(
-                                "unresolved function: '${candidate}()'"
-                            ) { _ -> error("this is the error function") }
+                            else -> functions.functions0[candidate]?.let { { _:DoubleArray -> it.invoke() } }
+                                ?: errorValue(
+                                    "unresolved function: '${candidate}()'"
+                                ) { _ -> error("this is the error function") }
                         }
                     functionStack.push(function)
                 }
@@ -264,9 +287,10 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
                             "floor" -> { x -> floor(x[0]) }
                             "ceil" -> { x -> ceil(x[0]) }
                             "saturate" -> { x -> x[0].coerceIn(0.0, 1.0) }
-                            else -> errorValue(
-                                "unresolved function: '${candidate}(x0)'"
-                            ) { _ -> error("this is the error function") }
+                            else -> functions.functions1[candidate]?.let { { x:DoubleArray -> it.invoke(x[0]) } }
+                                ?: errorValue(
+                                    "unresolved function: '${candidate}(x0)'"
+                                ) { _ -> error("this is the error function") }
                         }
                     functionStack.push(function)
                 }
@@ -278,9 +302,10 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
                             "pow" -> { x -> x[0].pow(x[1]) }
                             "atan2" -> { x -> atan2(x[0], x[1]) }
                             "random" -> { x -> Double.uniform(x[0], x[1]) }
-                            else -> errorValue(
-                                "unresolved function: '${candidate}(x0, x1)'"
-                            ) { _ -> error("this is the error function") }
+                            else -> functions.functions2[candidate]?.let { { x:DoubleArray -> it.invoke(x[0], x[1]) } }
+                                ?: errorValue(
+                                    "unresolved function: '${candidate}(x0, x1)'"
+                                ) { _ -> error("this is the error function") }
                         }
                     functionStack.push(function)
                 }
@@ -289,19 +314,32 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
                         when (val candidate = node.text) {
                             "mix" -> { x -> mix(x[0], x[1], x[2]) }
                             "smoothstep" -> { x -> smoothstep(x[0], x[1], x[2]) }
-                            else -> errorValue(
-                                "unresolved function: '${candidate}(x0, x1, x2)'"
-                            ) { _ -> error("this is the error function") }
+                            else -> functions.functions3[candidate]?.let { { x:DoubleArray -> it.invoke(x[0], x[1], x[2]) } }
+                                ?: errorValue(
+                                    "unresolved function: '${candidate}(x0, x1, x2)'"
+                                ) { _ -> error("this is the error function") }
                         }
                     functionStack.push(function)
                 }
+                IDType.FUNCTION4 -> {
+                    val function: (DoubleArray) -> Double =
+                        when (val candidate = node.text) {
+                            else -> functions.functions4[candidate]?.let { { x:DoubleArray -> it.invoke(x[0], x[1], x[2], x[3]) } }
+                                ?: errorValue(
+                                    "unresolved function: '${candidate}(x0, x1, x2, x3)'"
+                                ) { _ -> error("this is the error function") }
+                        }
+                    functionStack.push(function)
+                }
+
                 IDType.FUNCTION5 -> {
                     val function: (DoubleArray) -> Double =
                         when (val candidate = node.text) {
                             "map" -> { x -> map(x[0], x[1], x[2], x[3], x[4]) }
-                            else -> errorValue(
-                                "unresolved function: '${candidate}(x0, x1, x2, x3, x4)'"
-                            ) { _ -> error("this is the error function") }
+                            else -> functions.functions5[candidate]?.let { { x:DoubleArray -> it.invoke(x[0], x[1], x[2], x[3], x[4]) } }
+                                ?: errorValue(
+                                    "unresolved function: '${candidate}(x0, x1, x2, x3, x4)'"
+                                ) { _ -> error("this is the error function") }
                         }
                     functionStack.push(function)
                 }
@@ -313,7 +351,11 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
 
 class ExpressionException(message: String) : RuntimeException(message)
 
-fun evaluateExpression(input: String, variables: Map<String, Double> = emptyMap()): Double? {
+fun evaluateExpression(
+    input: String,
+    variables: Map<String, Double> = emptyMap(),
+    functions: FunctionExtensions = FunctionExtensions.EMPTY
+): Double? {
     val lexer = MiniCalcLexer(CharStreams.fromString(input))
 //
 //    lexer.removeErrorListeners()
@@ -345,7 +387,7 @@ fun evaluateExpression(input: String, variables: Map<String, Double> = emptyMap(
     })
 
     val root = parser.miniCalcFile()
-    val listener = ExpressionListener()
+    val listener = ExpressionListener(functions)
     listener.variables.putAll(variables)
     try {
         ParseTreeWalker.DEFAULT.walk(listener, root)

@@ -9,6 +9,7 @@ import org.openrndr.math.Vector2
 import org.openrndr.math.Vector3
 import org.openrndr.math.Vector4
 import java.io.File
+import java.lang.IllegalStateException
 import kotlin.math.roundToInt
 import kotlin.reflect.KProperty
 import kotlin.reflect.KProperty1
@@ -20,6 +21,8 @@ enum class KeyframerFormat {
     SIMPLE,
     FULL
 }
+
+
 
 open class Keyframer {
     private var currentTime = 0.0
@@ -99,13 +102,14 @@ open class Keyframer {
     fun loadFromJson(
         file: File,
         format: KeyframerFormat = KeyframerFormat.SIMPLE,
-        parameters: Map<String, Double> = emptyMap()
+        parameters: Map<String, Double> = emptyMap(),
+        functions: FunctionExtensions = FunctionExtensions.EMPTY
     ) {
         require(file.exists()) {
             "failed to load keyframer from json: '${file.absolutePath}' does not exist."
         }
         try {
-            loadFromJsonString(file.readText(), format, parameters)
+            loadFromJsonString(file.readText(), format, parameters, functions)
         } catch (e: ExpressionException) {
             throw ExpressionException("Error loading from '${file.path}': ${e.message ?: ""}")
         }
@@ -114,14 +118,15 @@ open class Keyframer {
     fun loadFromJsonString(
         json: String,
         format: KeyframerFormat = KeyframerFormat.SIMPLE,
-        parameters: Map<String, Double> = emptyMap()
+        parameters: Map<String, Double> = emptyMap(),
+        functions: FunctionExtensions = FunctionExtensions.EMPTY
     ) {
         when (format) {
             KeyframerFormat.SIMPLE -> {
                 try {
                     val type = object : TypeToken<List<Map<String, Any>>>() {}.type
                     val keys: List<MutableMap<String, Any>> = Gson().fromJson(json, type)
-                    loadFromKeyObjects(keys, parameters)
+                    loadFromKeyObjects(keys, parameters, functions)
                 } catch (e: JsonSyntaxException) {
                     error("Error parsing simple Keyframer data: ${e.cause?.message}")
                 }
@@ -130,7 +135,7 @@ open class Keyframer {
                 try {
                     val type = object : TypeToken<Map<String, Any>>() {}.type
                     val keys: Map<String, Any> = Gson().fromJson(json, type)
-                    loadFromObjects(keys, parameters)
+                    loadFromObjects(keys, parameters, functions)
                 } catch (e: JsonSyntaxException) {
                     error("Error parsing full Keyframer data: ${e.cause?.message}")
                 }
@@ -138,43 +143,49 @@ open class Keyframer {
         }
     }
 
-
     val parameters = mutableMapOf<String, Double>()
     val prototypes = mutableMapOf<String, Map<String, Any>>()
 
-    fun loadFromObjects(dict: Map<String, Any>, externalParameters: Map<String, Double>) {
+    fun loadFromObjects(
+        dict: Map<String, Any>,
+        externalParameters: Map<String, Double> = emptyMap(),
+        functions: FunctionExtensions = FunctionExtensions.EMPTY
+    ) {
         this.parameters.clear()
         this.parameters.putAll(externalParameters)
 
         prototypes.clear()
+        @Suppress("UNCHECKED_CAST")
         (dict["parameters"] as? Map<String, Any>)?.let { lp ->
             for (entry in lp) {
                 this.parameters[entry.key] = try {
                     when (val candidate = entry.value) {
                         is Double -> candidate
-                        is String -> evaluateExpression(candidate, parameters)
+                        is String -> evaluateExpression(candidate, parameters, functions)
                             ?: error("could not evaluate expression: '$candidate'")
                         is Int -> candidate.toDouble()
                         is Float -> candidate.toDouble()
                         else -> error("unknown type for parameter '${entry.key}'")
                     }
                 } catch (e: ExpressionException) {
-                    throw ExpressionException("error in 'parameters': ${e.message?:""} ")
+                    throw ExpressionException("error in 'parameters': ${e.message ?: ""} ")
                 }
             }
         }
         this.parameters.putAll(externalParameters)
 
+        @Suppress("UNCHECKED_CAST")
         (dict["prototypes"] as? Map<String, Map<String, Any>>)?.let {
             prototypes.putAll(it)
         }
 
+        @Suppress("UNCHECKED_CAST")
         (dict["keys"] as? List<Map<String, Any>>)?.let { keys ->
-            loadFromKeyObjects(keys, parameters)
+            loadFromKeyObjects(keys, parameters, functions)
         }
     }
 
-    fun resolvePrototype(prototypeNames: String): Map<String, Any> {
+    private fun resolvePrototype(prototypeNames: String): Map<String, Any> {
         val prototypeTokens = prototypeNames.split(" ").map { it.trim() }.filter { it.isNotBlank() }
         val prototypeRefs = prototypeTokens.mapNotNull { prototypes[it] }
 
@@ -185,8 +196,11 @@ open class Keyframer {
         return computed
     }
 
-    fun loadFromKeyObjects(keys: List<Map<String, Any>>, externalParameters: Map<String, Double>) {
-
+    fun loadFromKeyObjects(
+        keys: List<Map<String, Any>>,
+        externalParameters: Map<String, Double>,
+        functions: FunctionExtensions
+    ) {
         if (externalParameters !== parameters) {
             parameters.clear()
             parameters.putAll(externalParameters)
@@ -195,12 +209,15 @@ open class Keyframer {
         var lastTime = 0.0
 
         val channelDelegates = this::class.memberProperties
-            .mapNotNull { it as? KProperty1<Keyframer, Any> }
+            .mapNotNull {
+                @Suppress("UNCHECKED_CAST")
+                it as? KProperty1<Keyframer, Any>
+            }
             .filter { it.isAccessible = true; it.getDelegate(this) is CompoundChannel }
             .associate { Pair(it.name, it.getDelegate(this) as CompoundChannel) }
 
-        val channelKeys = channelDelegates.values.flatMap {
-            it.keys.map { it }
+        val channelKeys = channelDelegates.values.flatMap { channel ->
+            channel.keys.map { it }
         }.toSet()
 
         for (delegate in channelDelegates.values) {
@@ -225,7 +242,7 @@ open class Keyframer {
             val time = try {
                 when (val candidate = computed["time"]) {
                     null -> lastTime
-                    is String -> evaluateExpression(candidate, expressionContext)
+                    is String -> evaluateExpression(candidate, expressionContext, functions)
                         ?: error { "unknown value format for time : $candidate" }
                     is Double -> candidate
                     is Int -> candidate.toDouble()
@@ -239,7 +256,7 @@ open class Keyframer {
             val duration = try {
                 when (val candidate = computed["duration"]) {
                     null -> 0.0
-                    is String -> evaluateExpression(candidate, expressionContext)
+                    is String -> evaluateExpression(candidate, expressionContext, functions)
                         ?: error { "unknown value format for time : $candidate" }
                     is Int -> candidate.toDouble()
                     is Float -> candidate.toDouble()
@@ -276,11 +293,10 @@ open class Keyframer {
                     }
                     else -> error("unknown easing for '$easingCandidate'")
                 }
-            } catch (e: ExpressionException) {
+            } catch (e: IllegalStateException) {
                 throw ExpressionException("error in $path.'easing': ${e.message ?: ""}")
             }
 
-            val holdCandidate = computed["hold"]
             val hold = Hold.HoldNone
 
             val reservedKeys = setOf("time", "easing", "hold")
@@ -294,7 +310,7 @@ open class Keyframer {
                     val value = try {
                         when (val candidate = channelCandidate.value) {
                             is Double -> candidate
-                            is String -> evaluateExpression(candidate, expressionContext)
+                            is String -> evaluateExpression(candidate, expressionContext, functions)
                                 ?: error("unknown value format for key '${channelCandidate.key}' : $candidate")
                             is Int -> candidate.toDouble()
                             else -> error("unknown value type for key '${channelCandidate.key}' : $candidate")
@@ -309,13 +325,14 @@ open class Keyframer {
             expressionContext["t"] = lastTime
 
             if (computed.containsKey("repeat")) {
+                @Suppress("UNCHECKED_CAST")
                 val repeatObject = computed["repeat"] as? Map<String, Any> ?: error("'repeat' should be a map")
                 val count = try {
                     when (val candidate = repeatObject["count"]) {
                         null -> 1
                         is Int -> candidate
                         is Double -> candidate.toInt()
-                        is String -> evaluateExpression(candidate, expressionContext)?.roundToInt()
+                        is String -> evaluateExpression(candidate, expressionContext, functions)?.roundToInt()
                             ?: error("cannot evaluate expression for count: '$candidate'")
                         else -> error("unknown value type for count: '$candidate")
                     }
@@ -323,12 +340,13 @@ open class Keyframer {
                     throw ExpressionException("error in $path.repeat.'count': ${e.message ?: ""}")
                 }
 
-                val keys = repeatObject["keys"] as? List<Map<String, Any>> ?: error("no repeat keys")
+                @Suppress("UNCHECKED_CAST")
+                val repeatKeys = repeatObject["keys"] as? List<Map<String, Any>> ?: error("no repeat keys")
 
                 for (i in 0 until count) {
                     expressionContext["r"] = i.toDouble()
-                    for (key in keys) {
-                        handleKey(key, "$path.repeat")
+                    for (repeatKey in repeatKeys) {
+                        handleKey(repeatKey, "$path.repeat")
                     }
                 }
             }
