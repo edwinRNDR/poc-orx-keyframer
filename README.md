@@ -84,14 +84,16 @@ extend {
 
 Supported functions in expressions:
  - `min(x, y)`, `max(x, y)`
- - `cos(x)`, `sin(x)`, `acos(x)`, `asin(x)`
+ - `cos(x)`, `sin(x)`, `acos(x)`, `asin(x)`, `tan(x)`, `atan(x)`, `atan2(y, x)`
  - `abs(x)`, `saturate(x)`
  - `degrees(x)`, `radians(x)`
  - `pow(x,y)`, `sqrt(x)`, `exp(x)`
  - `mix(left, right, x)`
  - `smoothstep(t0, t1, x)`
  - `map(leftBefore, rightBefore, leftAfter, rightAfter, x)`
-[Parameters and prototypes](data/keyframes/circle-parametric.json)
+ - `random()`, `random(min, max)`
+  
+[Parameters and prototypes](data/keyframes/circle-parametric-2.json)
 
 
 ## Using this as a library
