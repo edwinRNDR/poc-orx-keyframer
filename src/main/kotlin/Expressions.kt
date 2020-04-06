@@ -33,7 +33,7 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
 
     override fun exitExpressionStatement(ctx: MiniCalcParser.ExpressionStatementContext) {
         ifError {
-            throw ExpressionException("error in evaluation of '${ctx.text}': ${it.message?:""}")
+            throw ExpressionException("error in evaluation of '${ctx.text}': ${it.message ?: ""}")
         }
         val result = doubleStack.pop()
         lastExpressionResult = result
@@ -50,7 +50,7 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
 
     override fun exitBinaryOperation1(ctx: MiniCalcParser.BinaryOperation1Context) {
         ifError {
-            pushError(it.message?:"")
+            pushError(it.message ?: "")
             return
         }
 
@@ -69,7 +69,7 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
 
     override fun exitBinaryOperation2(ctx: MiniCalcParser.BinaryOperation2Context) {
         ifError {
-            pushError(it.message?:"")
+            pushError(it.message ?: "")
             return
         }
 
@@ -95,7 +95,7 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
 
     override fun exitFunctionCall1Expression(ctx: MiniCalcParser.FunctionCall1ExpressionContext) {
         ifError {
-            pushError(it.message?:"")
+            pushError(it.message ?: "")
             return
         }
 
@@ -112,7 +112,7 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
 
     override fun exitFunctionCall2Expression(ctx: MiniCalcParser.FunctionCall2ExpressionContext) {
         ifError {
-            pushError(it.message?:"")
+            pushError(it.message ?: "")
             return
         }
 
@@ -130,7 +130,7 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
 
     override fun exitFunctionCall3Expression(ctx: MiniCalcParser.FunctionCall3ExpressionContext) {
         ifError {
-            pushError(it.message?:"")
+            pushError(it.message ?: "")
             return
         }
 
@@ -149,7 +149,7 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
 
     override fun exitFunctionCall4Expression(ctx: MiniCalcParser.FunctionCall4ExpressionContext) {
         ifError {
-            pushError(it.message?:"")
+            pushError(it.message ?: "")
             return
         }
 
@@ -170,7 +170,7 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
 
     override fun exitFunctionCall5Expression(ctx: MiniCalcParser.FunctionCall5ExpressionContext) {
         ifError {
-            pushError(it.message?:"")
+            pushError(it.message ?: "")
             return
         }
 
@@ -194,7 +194,7 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
         exceptionStack.push(ExpressionException(message))
     }
 
-    private inline fun ifError(f: (e:Throwable) -> Unit) {
+    private inline fun ifError(f: (e: Throwable) -> Unit) {
         if (exceptionStack.isNotEmpty()) {
             val e = exceptionStack.pop()
             f(e)
@@ -223,6 +223,8 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
                             "degrees" -> { x -> Math.toDegrees(x[0]) }
                             "cos" -> { x -> cos(x[0]) }
                             "sin" -> { x -> sin(x[0]) }
+                            "tan" -> { x -> tan(x[0]) }
+                            "atan" -> { x -> atan(x[0]) }
                             "acos" -> { x -> acos(x[0]) }
                             "asin" -> { x -> asin(x[0]) }
                             "exp" -> { x -> exp(x[0]) }
@@ -242,6 +244,7 @@ internal class ExpressionListener : MiniCalcParserBaseListener() {
                             "max" -> { x -> max(x[0], x[1]) }
                             "min" -> { x -> min(x[0], x[1]) }
                             "pow" -> { x -> x[0].pow(x[1]) }
+                            "atan2" -> { x -> atan2(x[0], x[1]) }
                             else -> errorValue(
                                 "unresolved function: '${candidate}'"
                             ) { x -> error("this is the error function") }
@@ -314,7 +317,7 @@ fun evaluateExpression(input: String, variables: Map<String, Double> = emptyMap(
     try {
         ParseTreeWalker.DEFAULT.walk(listener, root)
     } catch (e: ExpressionException) {
-        throw ExpressionException(e.message?:"")
+        throw ExpressionException(e.message ?: "")
     }
     return listener.lastExpressionResult
 }
