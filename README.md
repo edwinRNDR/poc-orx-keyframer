@@ -1,3 +1,7 @@
+# No longer a POC
+
+This is now part of [ORX](https://github.com/openrndr/orx), and this repository is now archived
+
 # poc-orx-keyframer
 Proof-of-concept for a reusable keyframer
 
